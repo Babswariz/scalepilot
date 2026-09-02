@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("user") // user, admin
+  password  String   // hashed password
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  serviceRequests ServiceRequest[]
+  supportTickets  SupportTicket[]
+}
+
+model ServiceRequest {
+  id          String   @id @default(cuid())
+  fullName    String
+  email       String
+  businessName String
+  websiteUrl  String?
+  businessStage String // "just-starting", "already-selling", "scaling"
+  capabilities String // JSON array of selected capabilities
+  projectContext String // Large textarea content
+  status      String   @default("new") // new, under-review, in-progress, completed, archived
+  internalNotes String?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model SupportTicket {
+  id          String        @id @default(cuid())
+  accessToken String?       @unique
+  name        String
+  email       String
+  subject     String        @default("")
+  category    String        // "general-question", "capabilities", "existing-project", "payment", "technical-support"
+  message     String
+  status      String        @default("open") // open, in-progress, resolved, closed
+  userId      String?
+  user        User?         @relation(fields: [userId], references: [id])
+  replies     SupportReply[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model SupportReply {
+  id          String        @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  message     String
+  senderType  String        @default("CUSTOMER") // CUSTOMER or ADMIN
+  isRead      Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+}
+
+model Capability {
+  id          String   @id @default(cuid())
+  number      Int      @unique
+  titleKey    String   // Translation key like "capability.market-opportunity.title"
+  descriptionKey String // Translation key
+  accentColor String   // e.g., "#2563EB", "blue", "purple", etc.
+  icon        String?  // Icon identifier or emoji
+  startingPrice Float  @default(0)
+  includesKey String   // JSON array of translation keys for features
+  enabled     Boolean  @default(true)
+  displayOrder Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PricingTier {
+  id       String   @id @default(cuid())
+  name     String   // "market-opportunity", "supply-intelligence", etc.
+  title    String
+  price    Float
+  currency String   @default("EUR")
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Result {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String
+  imagePath   String   // Local path for future cloud storage abstraction
+  displayOrder Int    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model FAQ {
+  id         String   @id @default(cuid())
+  questionKey String // Translation key like "faq.what-is-scalepilot.question"
+  answerKey  String   // Translation key
+  displayOrder Int    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Setting {
+  id    String  @id @default(cuid())
+  key   String  @unique
+  value String
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id                       String   @id @default(cuid())
+  transactionReference     String   @unique
+  flutterwaveTransactionId String?  @unique
+  customerName             String
+  customerEmail            String
+  selectedPlan             String
+  amount                   Float
+  currency                 String   @default("EUR")
+  status                   String   @default("PENDING")
+  serviceRequestId         String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+}
