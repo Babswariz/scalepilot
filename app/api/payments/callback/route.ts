@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   try {
     const verificationResponse = await fetch(`https://api.flutterwave.com/v3/transactions/${encodeURIComponent(transactionId)}/verify`, { headers: { Authorization: `Bearer ${secretKey}` } })
     const verification = await verificationResponse.json()
-    if (!verificationResponse.ok || !isValidFlutterwaveResponse(verification, transactionReference, payment.amount, payment.customerEmail)) {
+    if (!verificationResponse.ok || !isValidFlutterwaveResponse(verification, transactionReference, payment.amount, payment.currency, payment.customerEmail)) {
       await prisma.payment.update({ where: { id: payment.id }, data: { status: 'FAILED', flutterwaveTransactionId: transactionId } })
       if (payment.serviceRequestId) await prisma.serviceRequest.update({ where: { id: payment.serviceRequestId }, data: { status: 'payment-failed' } })
       return NextResponse.redirect(resultUrl(request, 'failed'))

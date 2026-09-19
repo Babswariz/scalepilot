@@ -6,11 +6,11 @@ import Navigation from '@/components/Navigation'
 import Footer from '@/components/Footer'
 import { getTranslation, Language } from '@/lib/translations'
 import { getClientLanguage } from '@/lib/client-language'
-import { formatServicePrice, serviceCatalog } from '@/lib/service-catalog'
+import { capabilityCatalog, formatCapabilityPrice } from '@/lib/service-catalog'
 
 export default function CapabilitiesPage() {
   const [language, setLanguage] = useState<Language>('en')
-  const [selectedCapability, setSelectedCapability] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
 
   useEffect(() => {
     setLanguage(getClientLanguage())
@@ -21,72 +21,91 @@ export default function CapabilitiesPage() {
       <Navigation />
 
       {/* Page Header */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-6xl md:text-7xl font-black mb-8">
+      <section className="pt-32 pb-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-7xl font-black mb-6">
             {getTranslation('nav.capabilities', language)}
           </h1>
-          <p className="text-xl text-[#94A3B8] max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-[#94A3B8] max-w-2xl mx-auto">
             {language === 'en'
-              ? 'Explore the connected tools and services that power the ScalePilot platform.'
-              : 'Ontdek de verbonden tools en diensten die het ScalePilot-platform aandrijven.'}
+              ? 'The intelligence, automation and growth systems that power the ScalePilot platform. Expert guidance available where applicable.'
+              : 'De intelligentie-, automatiserings- en groeisystemen achter het ScalePilot-platform. Deskundige begeleiding beschikbaar waar van toepassing.'}
           </p>
         </div>
       </section>
 
-      {/* Capabilities Grid */}
-      <section className="pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {serviceCatalog.map((cap) => (
-              <div
-                key={cap.id}
-                onClick={() => setSelectedCapability(selectedCapability === cap.id ? null : cap.id)}
-                className="group cursor-pointer"
-              >
-                <div
-                  className={`p-8 rounded-2xl border-2 transition-all ${
-                    selectedCapability === cap.id
-                      ? 'border-[#3B82F6] bg-[#2563EB]/10'
-                      : 'border-[#3B82F6]/30 hover:border-[#3B82F6]/60 bg-[#0B1220]/50'
-                  }`}
-                  style={{
-                    borderColor:
-                      selectedCapability === cap.id ? cap.color : 'rgba(59, 130, 246, 0.3)',
-                  }}
-                >
-                  <div className="mb-4 text-sm font-bold text-[#94A3B8]">
-                    {cap.number}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-3" style={{ color: cap.color }}>
-                    {cap.title}
-                  </h3>
-                  <p className="text-[#94A3B8] mb-4">
-                    Explore individual services and complete packages in this capability.
-                  </p>
+      {/* Category quick nav */}
+      <section className="px-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-center gap-2 mb-12">
+          {capabilityCatalog.map((category) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
+              className={`px-4 py-2 rounded-full text-sm font-semibold border transition-colors ${
+                activeCategory === category.id
+                  ? 'text-white'
+                  : 'text-[#94A3B8] border-[#3B82F6]/30 hover:border-[#3B82F6]/60'
+              }`}
+              style={
+                activeCategory === category.id
+                  ? { backgroundColor: `${category.color}20`, borderColor: category.color }
+                  : undefined
+              }
+            >
+              {category.title}
+            </button>
+          ))}
+        </div>
+      </section>
 
-                  {selectedCapability === cap.id && (
-                    <div className="mt-6 pt-6 border-t border-[#3B82F6]/20 space-y-4">
-                      <div>
-                        <ul className="space-y-2">
-                          {cap.services.map((service) => (
-                            <li key={service.id} className="text-sm text-[#94A3B8] flex items-start justify-between gap-3">
-                              <span><span style={{ color: cap.color }}>•</span> {service.name}{service.bundle ? ` (Bundle - save €${service.savings?.toFixed(2)} compared with individual services)` : ''}</span>
-                              <span className="whitespace-nowrap font-semibold text-white">{formatServicePrice(service.amount)}</span>
-                            </li>
-                          ))}
-                        </ul>
+      {/* Capabilities by category */}
+      <section className="pb-24 px-4">
+        <div className="max-w-7xl mx-auto space-y-16">
+          {capabilityCatalog
+            .filter((category) => !activeCategory || category.id === activeCategory)
+            .map((category) => (
+              <div key={category.id}>
+                <div className="flex items-center gap-4 mb-8">
+                  <span className="text-sm font-bold text-[#94A3B8]">{category.number}</span>
+                  <h2 className="text-2xl md:text-3xl font-bold" style={{ color: category.color }}>
+                    {category.title}
+                  </h2>
+                  <span className="hidden sm:block flex-1 h-px bg-[#3B82F6]/20" />
+                  <span className="text-sm text-[#94A3B8] whitespace-nowrap">
+                    {category.capabilities.length} {language === 'en' ? 'capabilities' : 'mogelijkheden'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {category.capabilities.map((capability) => (
+                    <div
+                      key={capability.id}
+                      className="flex flex-col p-6 rounded-2xl border border-[#3B82F6]/25 bg-[#0B1220]/50 hover:border-[#3B82F6]/60 transition-colors"
+                    >
+                      <span
+                        className="w-10 h-1 rounded-full mb-4"
+                        style={{ backgroundColor: category.color }}
+                        aria-hidden
+                      />
+                      <h3 className="text-lg font-bold mb-2">{capability.name}</h3>
+                      <p className="text-sm text-[#94A3B8] mb-5 flex-1">{capability.description}</p>
+                      <div className="flex items-center justify-between gap-3 pt-4 border-t border-[#3B82F6]/15">
+                        <span className="text-sm font-semibold text-white">
+                          {formatCapabilityPrice(capability)}
+                        </span>
+                        <Link
+                          href={`/get-started?capability=${capability.id}`}
+                          className="text-sm font-bold px-3 py-1.5 rounded-lg bg-[#2563EB] hover:bg-[#1d4ed8] transition-colors whitespace-nowrap"
+                        >
+                          {getTranslation('capability.get-started-cta', language)}
+                        </Link>
                       </div>
-                      {cap.services.map((service) => service.includes ? <div key={`${service.id}-includes`} className="border-t border-[#3B82F6]/20 pt-3 text-xs text-[#94A3B8"><strong className="text-white">{service.name} includes:</strong> {service.includes.join(', ')}</div> : null)}
-                      {cap.customMessage && <p className="border-t border-[#3B82F6]/20 pt-3 text-sm font-semibold text-white">{cap.customMessage}</p>}
-                      <Link href={`/get-started?service=${cap.services[0].id}`} className="block w-full mt-4 px-4 py-2 bg-[#2563EB] text-white font-bold rounded-lg text-center hover:bg-[#1d4ed8] transition-colors">{getTranslation('capability.get-started-cta', language)}</Link>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}
-          </div>
-
         </div>
       </section>
 
