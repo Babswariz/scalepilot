@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomUUID } from 'crypto'
 import { getFlutterwaveKeys, prisma } from '@/lib/flutterwave'
 import { computeSelectionAmount, getCapabilities } from '@/lib/service-catalog'
+import { getSessionUserId } from '@/lib/customer-auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
     const capabilitiesJson = JSON.stringify(selected.map((c) => c.id))
     const { amount, currency, payable } = computeSelectionAmount(selected.map((c) => c.id))
 
+    // Associate the request with the signed-in customer when there is a session.
+    const userId = await getSessionUserId()
+
     // Persist the request first so it is never lost, regardless of payment.
     const serviceRequest = await prisma.serviceRequest.create({
       data: {
@@ -43,6 +47,7 @@ export async function POST(request: NextRequest) {
         capabilities: capabilitiesJson,
         projectContext: String(body.projectContext || '').trim(),
         status: payable ? 'payment-pending' : 'new',
+        userId: userId || undefined,
       },
     })
 

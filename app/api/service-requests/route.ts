@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { cookies } from 'next/headers'
+import { prisma } from '@/lib/flutterwave'
+import { COOKIE_NAME, isValidAdminToken } from '@/lib/admin-auth'
+import { getSessionUserId } from '@/lib/customer-auth'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    const userId = await getSessionUserId()
 
     const serviceRequest = await prisma.serviceRequest.create({
       data: {
@@ -17,6 +19,7 @@ export async function POST(request: NextRequest) {
         capabilities: body.capabilities,
         projectContext: body.projectContext,
         status: 'new',
+        userId: userId || undefined,
       },
     })
 
@@ -30,11 +33,17 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Admin-only listing. Customer-scoped listing lives at /api/me/requests.
 export async function GET() {
   try {
+    const cookieStore = await cookies()
+    if (!(await isValidAdminToken(cookieStore.get(COOKIE_NAME)?.value))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const requests = await prisma.serviceRequest.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     })
 
     return NextResponse.json(requests)
